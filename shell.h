@@ -1,48 +1,105 @@
-#ifndef SHELL_H
-#define SHELL_H
+#ifndef SHELLH
+#define SHELLH
+
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <string.h>
-#include <stddef.h>
+#include <fcntl.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <sys/stat.h>
-#define TOK_DELIM " \t\r\n\v\a"
-/**
-* struct list_path - singly linked list
-* @dir: string - (malloc'ed string)
-* @next: points to the next node
-*
-* Description: singly linked list node structure
-* for directories of PATH
-*/
-typedef struct list_path
-{
-	char *dir;
-	struct list_path *next;
-} list_p;
+#include "history.h"
+#include "shellvars.h"
+/*#include <string.h>*/
 
-/*Functions of the shell*/
-void execute_line(char **argv, char **commands, int count,
-		  char **env, int *exit_st, char *line);
-char **split_line(char *line);
-list_p *list_path(char **env);
-int _setenv(const char *name, const char *value, int overwrite);
-char *_which(char **commands, char **env);
-void built_exit(char *line, char **arg, int *exit_st, int count);
-void built_env(char **arg, char **env, int *exit_st);
-char *_getenv(const char *name, char **env);
-void _error(char **argv, char *first, int count, int **exit_st);
-int special_case(char *line, ssize_t line_len, int *exit_st);
-void print_num(int count);
+/* from in.c */
+int shintmode(void);
 
-/*useful functions*/
-int _strlen(char *s);
-void add_node_end(list_p **head, const char *str);
-char *_strcat(char *s1, char *s2);
+/* from _printenv.c */
+int _printenv(void);
+
+/* from cmdcall.c */
+int builtincall(char *av[]);
+int cmdcall(char *av[], char *path);
+
+/* from parser.c */
+int parseargs(char **buf);
+
+/* from errhandl.c */
+int errhandl(int status);
+
+/* from string.c */
+size_t _strlen(char *str);
+char *_strcpy(char *dest, char *src);
+int _strcmp(char *, char *);
 char *_strdup(char *str);
-int _strcmp(char *s1, char *s2);
-void free_loop(char **arr);
-void free_list(list_p *head);
-char *_strncpy(char *dest, char *src, int n);
+char *_strcat(char *a, char *b);
+
+/* from _getenv.c and getenviron.c */
+char ***getenviron(void);
+int setallenv(char **environ, char *add);
+char *_getenv(char *avzero);
+int _setenv(char *name, char *val);
+int _unsetenv(char *name);
+char **getallenv(void);
+
+
+/* from utility.c */
+char *itos(int digits);
+char *_strchr(char *s, char c);
+int fprintstrs(int fd, char *str, ...);
+int printerr(char *);
+int linecount(int);
+
+/* from cd.c */
+int _cd(char *av[]);
+
+/* from alias.c */
+int aliascmd(char **av);
+char *getalias(char *name);
+int unsetalias(char *name);
+
+/* from shellvars.c */
+int initsvars(int ac, char **av);
+char *getsvar(char *name);
+int setsvar(char *name, char *val);
+int unsetsvar(char *name);
+ShellVar **getspecial(void);
+ShellVar **getvars(void);
+
+/* from _realloc.c */
+void *_realloc(void *ptr, unsigned int old_size, unsigned int new_size);
+
+/* from _strtok.c */
+char *strtok(char *str, char *delim);
+
+/* from _getline.c */
+int _getline(char **lineptr, int fd);
+
+char *strtokqe(char *str, char *delim, int escflags);
+
+/*from history.c*/
+int sethist(char *cmd);
+int print_hist(void);
+int exit_hist(void);
+
+
+/* from _printenv.c */
+int _printenv(void);
+int _putchar(char c);
+
+
+
+/*from help.c*/
+int help(char *cmd);
+
+/* from exitcleanup.c */
+void exitcleanup(char **av);
+
+/* from _atoi*/
+int _atoi(char *s);
+
+char *_getpid(void);
+
+
+#endif
