@@ -1,73 +1,86 @@
-#include "sshell.h"
-/**
- * Counter - counts the number of lim found in the input
- * @C: the input string;
- * @lim: character to find inside the C string
- * Return: number of characters found
- */
-int Counter(char *C, char *lim)
-{
-	int i = 0, num = 0;
+#include "shell.h"
 
-	if (lim != NULL)
+/**
+ * is_cmd - determines if a file is an executable command
+ * @info: the info struct
+ * @path: path to the file
+ *
+ * Return: 1 if true, 0 otherwise
+ */
+int is_cmd(info_t *info, char *path)
+{
+	struct stat st;
+
+	(void)info;
+	if (!path || stat(path, &st))
+		return (0);
+
+	if (st.st_mode & S_IFREG)
 	{
-		while (C && C[i] != '\0')
-		{
-			if (C[i] != lim[0])
-			{
-				if (C[i + 1] == lim[0] || C[i + 1] == '\0')
-					num++;
-			}
-			i++;
-		}
+		return (1);
 	}
-	return (num);
+	return (0);
 }
-/**
- * parsing - create an array of pointers depending of the delimit characters
- * @line: input of the user
- * Return: an array of pointers of n size
- */
-char **parsing(char *line)
-{
-	char *token = NULL, **p = NULL;
-	int length = 0, j = 0, i = 0, buffsize = 0;
 
-	if (line == NULL)
+/**
+ * dup_chars - duplicates characters
+ * @pathstr: the PATH string
+ * @start: starting index
+ * @stop: stopping index
+ *
+ * Return: pointer to new buffer
+ */
+char *dup_chars(char *pathstr, int start, int stop)
+{
+	static char buf[1024];
+	int i = 0, k = 0;
+
+	for (k = 0, i = start; i < stop; i++)
+		if (pathstr[i] != ':')
+			buf[k++] = pathstr[i];
+	buf[k] = 0;
+	return (buf);
+}
+
+/**
+ * find_path - finds this cmd in the PATH string
+ * @info: the info struct
+ * @pathstr: the PATH string
+ * @cmd: the cmd to find
+ *
+ * Return: full path of cmd if found or NULL
+ */
+char *find_path(info_t *info, char *pathstr, char *cmd)
+{
+	int i = 0, curr_pos = 0;
+	char *path;
+
+	if (!pathstr)
 		return (NULL);
-	buffsize = Counter(line, " ");
-	p = _calloc((buffsize + 1), sizeof(char *));
-	if (!p)
+	if ((_strlen(cmd) > 2) && starts_with(cmd, "./"))
 	{
-		perror("No memory");
-		return (NULL);
+		if (is_cmd(info, cmd))
+			return (cmd);
 	}
-	/*store the token partition inside **p */
-	token = _strtok(line, " \t\n");
-	if (!token)
+	while (1)
 	{
-		free(p);
-		return (NULL);
-	}
-	while (token)
-	{
-		while (token[length] != '\0')
-			length++;
-		p[j] = _calloc((length + 1), sizeof(char));
-		if (p[j] == NULL)
+		if (!pathstr[i] || pathstr[i] == ':')
 		{
-			gridfree(p, j);
-			perror("No memory");
-			return (NULL);
+			path = dup_chars(pathstr, curr_pos, i);
+			if (!*path)
+				_strcat(path, cmd);
+			else
+			{
+				_strcat(path, "/");
+				_strcat(path, cmd);
+			}
+			if (is_cmd(info, path))
+				return (path);
+			if (!pathstr[i])
+				break;
+			curr_pos = i;
 		}
-		/*fill the pointer with the content of token*/
-		for (i = 0; i < length; i++)
-			p[j][i] = token[i];
-		length = 0;
-		j++;
-		/*get the next element*/
-		token = _strtok(NULL, " \t\n");
+		i++;
 	}
-	p[j] = NULL;
-	return (p);
+	return (NULL);
 }
